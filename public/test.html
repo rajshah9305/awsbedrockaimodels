@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Test</title>
+</head>
+<body>
+    <h1>Quick API Test</h1>
+    <button onclick="testNova()">Test Nova (Should Work)</button>
+    <button onclick="testLlama()">Test Llama (Will Fail)</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testNova() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing Nova...';
+            
+            try {
+                const response = await fetch('/api/bedrock/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Say hi!',
+                        modelId: 'amazon.nova-2-lite-v1:0',
+                        parameters: { temperature: 0.7, maxTokens: 100, topP: 0.9 }
+                    })
+                });
+                
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function testLlama() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing Llama...';
+            
+            try {
+                const response = await fetch('/api/bedrock/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Say hi!',
+                        modelId: 'meta.llama4-maverick-17b-instruct-v1:0',
+                        parameters: { temperature: 0.7, maxTokens: 2048, topP: 0.9 }
+                    })
+                });
+                
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
