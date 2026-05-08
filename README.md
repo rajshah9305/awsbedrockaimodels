@@ -256,24 +256,6 @@ npm run dev
 npm start
 ```
 
-### Docker (Optional)
-Create a `Dockerfile`:
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-Build and run:
-```bash
-docker build -t bedrock-app .
-docker run -p 3000:3000 --env-file .env bedrock-app
-```
-
 ## 📝 License
 
 MIT License - feel free to use this project for personal or commercial purposes.
