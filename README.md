@@ -1,6 +1,6 @@
 # 🤖 AWS Bedrock AI Web Application
 
-A comprehensive, feature-rich web application for interacting with AWS Bedrock AI models. This application provides an intuitive interface for text generation, chat conversations, image generation, and embeddings using various foundation models from AWS Bedrock.
+A production-ready, comprehensive web application for interacting with AWS Bedrock AI models. This application provides an intuitive interface for text generation, chat conversations, image generation, and embeddings.
 
 ## ✨ Features
 
@@ -13,6 +13,7 @@ A comprehensive, feature-rich web application for interacting with AWS Bedrock A
 ### 🤖 Supported Models
 - **Anthropic Claude** (Claude 3, Claude 2, Claude Instant)
 - **Amazon Titan** (Text, Embeddings)
+- **Amazon Nova** (Latest models - recommended)
 - **AI21 Labs** (Jurassic models)
 - **Cohere** (Command, Embed)
 - **Meta Llama** (Llama 2, Llama 3)
@@ -22,7 +23,7 @@ A comprehensive, feature-rich web application for interacting with AWS Bedrock A
 - **Real-time Streaming**: Stream responses as they're generated
 - **Customizable Parameters**: Adjust temperature, max tokens, top-p, and more
 - **Model Discovery**: Automatically fetch and display available models
-- **Statistics Tracking**: Monitor request count, token usage, and response times
+- **Response Time Tracking**: Monitor performance metrics
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Toast Notifications**: User-friendly feedback for all operations
 - **Beautiful UI**: Modern, gradient-based design with smooth animations
@@ -36,9 +37,10 @@ A comprehensive, feature-rich web application for interacting with AWS Bedrock A
 
 ### Installation
 
-1. **Clone or navigate to the project directory**
+1. **Clone the repository**
 ```bash
-cd /Users/rajshah/Downloads/Projects/fkgkk
+git clone https://github.com/rajshah9305/awsbedrockaimodels.git
+cd awsbedrockaimodels
 ```
 
 2. **Install dependencies**
@@ -48,14 +50,22 @@ npm install
 
 3. **Configure AWS credentials**
 
-Edit the `.env` file and add your AWS secret access key:
+Copy `.env.example` to `.env` and add your AWS credentials:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in your values:
 ```env
-AWS_ACCESS_KEY_ID=AKIA5SIWODAJFD2TM3WW
+AWS_ACCESS_KEY_ID=your_access_key_here
 AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
 AWS_REGION=us-east-1
-AWS_ACCOUNT_ID=932591835154
+AWS_ACCOUNT_ID=your_account_id_here
 PORT=3000
+NODE_ENV=development
 ```
+
+⚠️ **SECURITY WARNING**: Never commit the `.env` file to version control. It is already added to `.gitignore`.
 
 4. **Start the server**
 ```bash
@@ -74,13 +84,14 @@ Navigate to: `http://localhost:3000`
 
 ```
 .
-├── server.js                 # Express server setup
+├── server.js                 # Express server with middleware
 ├── package.json             # Dependencies and scripts
-├── .env                     # Environment variables (AWS credentials)
+├── .env.example             # Environment configuration template
+├── .gitignore              # Git ignore patterns
 ├── services/
 │   └── bedrockService.js    # AWS Bedrock service integration
 ├── routes/
-│   └── bedrock.js           # API routes for Bedrock operations
+│   └── bedrock.js           # API routes with validation
 └── public/
     ├── index.html           # Main HTML interface
     ├── styles.css           # Styling and animations
@@ -92,12 +103,27 @@ Navigate to: `http://localhost:3000`
 ### GET `/api/bedrock/models`
 List all available foundation models
 
+### GET `/api/health`
+Health check endpoint
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-05-16T...",
+  "service": "AWS Bedrock AI Web App",
+  "environment": "production"
+}
+```
+
 ### POST `/api/bedrock/generate`
 Generate text with a single response
+
+**Request:**
 ```json
 {
   "prompt": "Your prompt here",
-  "modelId": "anthropic.claude-v2",
+  "modelId": "amazon.nova-2-lite-v1:0",
   "parameters": {
     "temperature": 0.7,
     "maxTokens": 2048,
@@ -111,19 +137,23 @@ Generate text with streaming response (Server-Sent Events)
 
 ### POST `/api/bedrock/chat`
 Chat with conversation history
+
+**Request:**
 ```json
 {
   "messages": [
     {"role": "user", "content": "Hello"},
     {"role": "assistant", "content": "Hi there!"}
   ],
-  "modelId": "anthropic.claude-v2",
+  "modelId": "amazon.nova-2-lite-v1:0",
   "parameters": {...}
 }
 ```
 
 ### POST `/api/bedrock/generate-image`
 Generate images using Stable Diffusion
+
+**Request:**
 ```json
 {
   "prompt": "A beautiful sunset",
@@ -139,6 +169,8 @@ Generate images using Stable Diffusion
 
 ### POST `/api/bedrock/embeddings`
 Generate text embeddings
+
+**Request:**
 ```json
 {
   "text": "Your text here",
@@ -157,7 +189,7 @@ Generate text embeddings
 
 ### Chat Conversation
 1. Select "Chat Conversation" mode
-2. Choose a chat-capable model (e.g., Claude)
+2. Choose a chat-capable model
 3. Type your message and press "Send"
 4. Continue the conversation with context awareness
 
@@ -170,17 +202,18 @@ Generate text embeddings
 
 ### Embeddings
 1. Select "Embeddings" mode
-2. Choose an embedding model (e.g., Titan Embeddings)
+2. Choose an embedding model
 3. Enter your text
 4. Click "Generate Embeddings"
 
 ## 🔐 Security Notes
 
-- **Never commit your `.env` file** to version control
-- Store AWS credentials securely
+- **Never commit your `.env` file** to version control (already in `.gitignore`)
+- Store AWS credentials securely using environment variables
 - Use IAM roles with minimal required permissions
 - Consider implementing rate limiting for production use
 - Add authentication/authorization for public deployments
+- For production, use AWS IAM roles instead of access keys
 
 ## 🛠️ Configuration
 
@@ -197,33 +230,8 @@ Ensure your AWS account has access to the Bedrock models you want to use:
 - `AWS_REGION`: AWS region (default: us-east-1)
 - `AWS_ACCOUNT_ID`: Your AWS account ID
 - `PORT`: Server port (default: 3000)
-
-## 📊 Features in Detail
-
-### Streaming Support
-Real-time text generation with Server-Sent Events (SSE) for immediate feedback as the model generates responses.
-
-### Multi-Model Support
-Automatically adapts request/response formats for different model providers:
-- Anthropic Claude format
-- Amazon Titan format
-- AI21 Labs format
-- Cohere format
-- Meta Llama format
-
-### Parameter Customization
-Fine-tune model behavior with adjustable parameters:
-- **Temperature**: Control randomness (0-1)
-- **Max Tokens**: Limit response length
-- **Top P**: Nucleus sampling parameter
-- **CFG Scale**: Image generation guidance (images only)
-- **Steps**: Image generation quality (images only)
-
-### Statistics Dashboard
-Track your usage with real-time statistics:
-- Total requests made
-- Tokens consumed
-- Average response time
+- `NODE_ENV`: Environment mode (development/production)
+- `CORS_ORIGIN`: CORS origin setting (default: '*')
 
 ## 🐛 Troubleshooting
 
@@ -238,11 +246,21 @@ Track your usage with real-time statistics:
 - Verify you have access to the selected model
 - Ensure parameters are within model limits
 - Check AWS CloudWatch logs for detailed errors
+- Try using Amazon Nova models (they're most reliable)
 
 ### Streaming not working
 - Verify browser supports Server-Sent Events
 - Check network/firewall settings
 - Ensure model supports streaming
+- Check browser console for errors
+
+## 📊 Performance
+
+- Optimized frontend with minimal dependencies
+- Efficient state management in vanilla JavaScript
+- Server-side validation and error handling
+- Async/await for clean error handling
+- Connection pooling via AWS SDK
 
 ## 🚀 Deployment
 
@@ -256,13 +274,24 @@ npm run dev
 npm start
 ```
 
+### Docker (Optional)
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
 ## 📝 License
 
 MIT License - feel free to use this project for personal or commercial purposes.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests.
+Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## 📧 Support
 
