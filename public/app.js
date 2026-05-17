@@ -22,6 +22,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupEventListeners();
     loadModels();
+    
+    // Add touch support detection
+    if ('ontouchstart' in window) {
+        document.body.classList.add('touch-device');
+    }
+    
+    // Add connection status monitoring
+    window.addEventListener('online', () => {
+        showToast('Connection restored', 'success');
+    });
+    
+    window.addEventListener('offline', () => {
+        showToast('No internet connection', 'error');
+    });
 });
 
 function initializeApp() {
@@ -119,7 +133,13 @@ async function loadModels() {
         }
     } catch (error) {
         console.error('Error loading models:', error);
-        showToast('Failed to load models: ' + error.message, 'error');
+        const errorMsg = error.message || 'Unknown error';
+        showToast('Failed to load models: ' + errorMsg, 'error');
+        
+        // Provide offline fallback message
+        if (!navigator.onLine) {
+            showToast('Please check your internet connection', 'error');
+        }
     } finally {
         showLoading(false);
     }
@@ -335,6 +355,8 @@ function displayChatMessage(role, content) {
     const messagesEl = document.getElementById('chat-messages');
     const messageEl = document.createElement('div');
     messageEl.className = `chat-message ${role}`;
+    messageEl.setAttribute('role', 'article');
+    messageEl.setAttribute('aria-label', `${role} message`);
     
     const roleEl = document.createElement('div');
     roleEl.className = 'role';
@@ -348,7 +370,11 @@ function displayChatMessage(role, content) {
     messageEl.appendChild(contentEl);
     messagesEl.appendChild(messageEl);
     
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    // Smooth scroll to bottom
+    messagesEl.scrollTo({
+        top: messagesEl.scrollHeight,
+        behavior: 'smooth'
+    });
 }
 
 async function handleImageGeneration() {
@@ -484,14 +510,26 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+    
+    // Truncate long messages on mobile
+    const isMobile = window.innerWidth < 768;
+    const maxLength = isMobile ? 100 : 200;
+    const displayMessage = message.length > maxLength 
+        ? message.substring(0, maxLength) + '...' 
+        : message;
+    
+    toast.textContent = displayMessage;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
     
     container.appendChild(toast);
     
     setTimeout(() => {
         toast.style.animation = 'slideInRight 0.3s ease reverse';
         setTimeout(() => {
-            container.removeChild(toast);
+            if (container.contains(toast)) {
+                container.removeChild(toast);
+            }
         }, 300);
     }, 3000);
 }
