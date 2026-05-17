@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Bedrock AI Web App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AWS Bedrock AI Web App</h1>
+            <p class="subtitle">Advanced AI Models at Your Fingertips</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="section">
+                    <h3>🎯 Mode</h3>
+                    <select id="mode-select" class="select-input">
+                        <option value="text">Text Generation</option>
+                        <option value="chat">Chat Conversation</option>
+                        <option value="image">Image Generation</option>
+                        <option value="embeddings">Embeddings</option>
+                    </select>
+                </div>
+
+                <div class="section">
+                    <h3>🤖 Model</h3>
+                    <select id="model-select" class="select-input">
+                        <option value="loading">Loading models...</option>
+                    </select>
+                    <button id="refresh-models" class="btn btn-secondary">🔄 Refresh</button>
+                </div>
+
+                <div class="section">
+                    <h3>⚙️ Parameters</h3>
+                    
+                    <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
+                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" class="slider">
+                    
+                    <label for="max-tokens">Max Tokens: <span id="tokens-value">2048</span></label>
+                    <input type="range" id="max-tokens" min="256" max="4096" step="256" value="2048" class="slider">
+                    
+                    <label for="top-p">Top P: <span id="top-p-value">0.9</span></label>
+                    <input type="range" id="top-p" min="0" max="1" step="0.1" value="0.9" class="slider">
+
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="streaming" checked>
+                            Enable Streaming
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>📊 Stats</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Requests:</span>
+                            <span id="request-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Tokens Used:</span>
+                            <span id="token-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg Response:</span>
+                            <span id="avg-response" class="stat-value">0ms</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Area -->
+            <main class="main-area">
+                <!-- Text Generation Mode -->
+                <div id="text-mode" class="mode-content active">
+                    <div class="input-section">
+                        <h3>💬 Enter Your Prompt</h3>
+                        <textarea id="text-prompt" class="prompt-input" placeholder="Enter your prompt here..."></textarea>
+                        <button id="generate-text" class="btn btn-primary">✨ Generate</button>
+                        <button id="clear-text" class="btn btn-secondary">🗑️ Clear</button>
+                    </div>
+                    <div class="output-section">
+                        <h3>📝 Response</h3>
+                        <div id="text-output" class="output-box"></div>
+                    </div>
+                </div>
+
+                <!-- Chat Mode -->
+                <div id="chat-mode" class="mode-content">
+                    <div class="chat-container">
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <textarea id="chat-input" class="chat-input" placeholder="Type your message..."></textarea>
+                            <button id="send-chat" class="btn btn-primary">Send</button>
+                            <button id="clear-chat" class="btn btn-secondary">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Generation Mode -->
+                <div id="image-mode" class="mode-content">
+                    <div class="input-section">
+                        <h3>🎨 Image Prompt</h3>
+                        <textarea id="image-prompt" class="prompt-input" placeholder="Describe the image you want to generate..."></textarea>
+                        
+                        <div class="image-params">
+                            <div class="param-group">
+                                <label>Width: <span id="width-value">512</span>px</label>
+                                <input type="range" id="image-width" min="256" max="1024" step="64" value="512" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>Height: <span id="height-value">512</span>px</label>
+                                <input type="range" id="image-height" min="256" max="1024" step="64" value="512" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>Steps: <span id="steps-value">50</span></label>
+                                <input type="range" id="image-steps" min="10" max="150" step="10" value="50" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>CFG Scale: <span id="cfg-value">7</span></label>
+                                <input type="range" id="cfg-scale" min="1" max="20" step="1" value="7" class="slider">
+                            </div>
+                        </div>
+                        
+                        <button id="generate-image" class="btn btn-primary">🎨 Generate Image</button>
+                        <button id="clear-image" class="btn btn-secondary">🗑️ Clear</button>
+                    </div>
+                    <div class="output-section">
+                        <h3>🖼️ Generated Image</h3>
+                        <div id="image-output" class="image-output"></div>
+                    </div>
+                </div>
+
+                <!-- Embeddings Mode -->
+                <div id="embeddings-mode" class="mode-content">
+                    <div class="input-section">
+                        <h3>📊 Text for Embeddings</h3>
+                        <textarea id="embeddings-input" class="prompt-input" placeholder="Enter text to generate embeddings..."></textarea>
+                        <button id="generate-embeddings" class="btn btn-primary">🔢 Generate Embeddings</button>
+                        <button id="clear-embeddings" class="btn btn-secondary">🗑️ Clear</button>
+                    </div>
+                    <div class="output-section">
+                        <h3>📈 Embeddings Result</h3>
+                        <div id="embeddings-output" class="output-box"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

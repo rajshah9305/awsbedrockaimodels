@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test - AWS Bedrock</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #232F3E;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #FF9900 0%, #ff7700 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 153, 0, 0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 2px solid #ddd;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #00A86B; font-weight: bold; }
+        .error { color: #D13212; font-weight: bold; }
+        .info { color: #146EB4; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #232F3E;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API Test Page</h1>
+        <p class="subtitle">Quick tests for AWS Bedrock API endpoints</p>
+        
+        <div class="test-section">
+            <h3>✅ Recommended Models (Should Work)</h3>
+            <button onclick="testNova()">Test Amazon Nova</button>
+            <button onclick="testClaude()">Test Claude</button>
+            <button onclick="testTitan()">Test Titan</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 System Tests</h3>
+            <button onclick="testHealth()">Health Check</button>
+            <button onclick="testModels()">List Models</button>
+        </div>
+        
+        <pre id="output">Click a button to test an endpoint...</pre>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.textContent = '';
+        }
+        
+        async function testHealth() {
+            clearOutput();
+            log('Testing health endpoint...', 'info');
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                log('✅ Health check passed!', 'success');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('❌ Health check failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function testModels() {
+            clearOutput();
+            log('Fetching available models...', 'info');
+            
+            try {
+                const response = await fetch('/api/bedrock/models');
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Found ${data.models.length} models`, 'success');
+                    log(JSON.stringify(data.models.slice(0, 5), null, 2));
+                    log(`... and ${data.models.length - 5} more models`);
+                } else {
+                    log('❌ Failed to fetch models: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testNova() {
+            clearOutput();
+            log('Testing Amazon Nova 2 Lite...', 'info');
+            
+            try {
+                const response = await fetch('/api/bedrock/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Say hello in one sentence!',
+                        modelId: 'amazon.nova-lite-v1:0',
+                        parameters: { temperature: 0.7, maxTokens: 100, topP: 0.9 }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Nova test passed!', 'success');
+                    log('Response: ' + data.response.text);
+                } else {
+                    log('❌ Nova test failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testClaude() {
+            clearOutput();
+            log('Testing Claude 3 Haiku...', 'info');
+            
+            try {
+                const response = await fetch('/api/bedrock/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Say hello in one sentence!',
+                        modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+                        parameters: { temperature: 0.7, maxTokens: 100, topP: 0.9 }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Claude test passed!', 'success');
+                    log('Response: ' + data.response.text);
+                } else {
+                    log('❌ Claude test failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testTitan() {
+            clearOutput();
+            log('Testing Amazon Titan...', 'info');
+            
+            try {
+                const response = await fetch('/api/bedrock/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Say hello in one sentence!',
+                        modelId: 'amazon.titan-text-express-v1',
+                        parameters: { temperature: 0.7, maxTokens: 100, topP: 0.9 }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Titan test passed!', 'success');
+                    log('Response: ' + data.response.text);
+                } else {
+                    log('❌ Titan test failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
