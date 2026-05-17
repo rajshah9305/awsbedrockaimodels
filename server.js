@@ -1,3 +1,12 @@
+/**
+ * AWS Bedrock AI Web Application
+ * 
+ * @author RAJ SHAH
+ * @repository https://github.com/rajshah9305/awsbedrockaimodels
+ * @description Advanced web application for interacting with AWS Bedrock AI models
+ * @license MIT
+ */
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -44,18 +53,21 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log('='.repeat(60));
+  console.log('='.repeat(70));
   console.log('🚀 AWS Bedrock AI Web App');
-  console.log('='.repeat(60));
+  console.log('👨‍💻 Developed by: RAJ SHAH');
+  console.log('🔗 GitHub: https://github.com/rajshah9305/awsbedrockaimodels');
+  console.log('='.repeat(70));
   console.log(`📍 Server running on: http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🧪 API tests: http://localhost:${PORT}/test.html`);
   console.log(`🌍 Region: ${process.env.AWS_REGION || 'us-east-1'}`);
-  console.log('='.repeat(60));
+  console.log('='.repeat(70));
   console.log('🤖 Ready to interact with AWS Bedrock models!');
   console.log('');
   console.log('💡 Quick Tips:');
   console.log('   • Use Amazon Nova, Claude, or Titan models (no subscription needed)');
   console.log('   • Enable model access in AWS Bedrock Console first');
-  console.log('   • Check SETUP_GUIDE.md for detailed instructions');
-  console.log('='.repeat(60));
+  console.log('   • Check README.md for detailed instructions');
+  console.log('='.repeat(70));
 });

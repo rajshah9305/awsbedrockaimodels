@@ -9,8 +9,12 @@
     "test-setup": "node test-setup.js"
   },
   "keywords": ["aws", "bedrock", "ai", "llm", "claude", "titan"],
-  "author": "",
+  "author": "RAJ SHAH <rajshah9305@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rajshah9305/awsbedrockaimodels.git"
+  },
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.540.0",
     "@aws-sdk/client-bedrock-runtime": "^3.540.0",

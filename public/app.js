@@ -1,3 +1,10 @@
+/**
+ * AWS Bedrock AI Web App - Frontend
+ * 
+ * @author RAJ SHAH
+ * @description Frontend application logic for AWS Bedrock AI interactions
+ */
+
 // Global state
 const state = {
     models: [],

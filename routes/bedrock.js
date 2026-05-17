@@ -1,3 +1,10 @@
+/**
+ * AWS Bedrock API Routes
+ * 
+ * @author RAJ SHAH
+ * @description API endpoints for AWS Bedrock operations
+ */
+
 const express = require('express');
 const router = express.Router();
 const bedrockService = require('../services/bedrockService');

@@ -1,3 +1,10 @@
+/**
+ * AWS Bedrock Service
+ * 
+ * @author RAJ SHAH
+ * @description Service layer for AWS Bedrock AI model interactions
+ */
+
 const { 
   BedrockClient, 
   ListFoundationModelsCommand 

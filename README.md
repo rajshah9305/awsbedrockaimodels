@@ -8,6 +8,8 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+**Developed by [RAJ SHAH](https://github.com/rajshah9305)**
+
 </div>
 
 ---
@@ -209,6 +211,16 @@ MIT License - Free for personal and commercial use
 
 **Built with ❤️ using AWS Bedrock**
 
-[Report Bug](https://github.com/yourusername/repo/issues) · [Request Feature](https://github.com/yourusername/repo/issues)
+**Developed by [RAJ SHAH](https://github.com/rajshah9305)**
+
+[Report Bug](https://github.com/rajshah9305/awsbedrockaimodels/issues) · [Request Feature](https://github.com/rajshah9305/awsbedrockaimodels/issues)
+
+---
+
+### 👨‍💻 Developer
+
+**RAJ SHAH**
+- GitHub: [@rajshah9305](https://github.com/rajshah9305)
+- Repository: [awsbedrockaimodels](https://github.com/rajshah9305/awsbedrockaimodels)
 
 </div>
