@@ -27,7 +27,7 @@
             <aside class="sidebar">
                 <div class="section">
                     <h3>🎯 Mode</h3>
-                    <select id="mode-select" class="select-input">
+                    <select id="mode-select" class="select-input" aria-label="Select AI mode">
                         <option value="text">Text Generation</option>
                         <option value="chat">Chat Conversation</option>
                         <option value="image">Image Generation</option>
@@ -37,27 +37,27 @@
 
                 <div class="section">
                     <h3>🤖 Model</h3>
-                    <select id="model-select" class="select-input">
+                    <select id="model-select" class="select-input" aria-label="Select AI model">
                         <option value="loading">Loading models...</option>
                     </select>
-                    <button id="refresh-models" class="btn btn-secondary">🔄 Refresh</button>
+                    <button id="refresh-models" class="btn btn-secondary" aria-label="Refresh model list">🔄 Refresh</button>
                 </div>
 
                 <div class="section">
                     <h3>⚙️ Parameters</h3>
                     
                     <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
-                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" class="slider">
+                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" class="slider" aria-label="Temperature slider">
                     
                     <label for="max-tokens">Max Tokens: <span id="tokens-value">2048</span></label>
-                    <input type="range" id="max-tokens" min="256" max="4096" step="256" value="2048" class="slider">
+                    <input type="range" id="max-tokens" min="256" max="4096" step="256" value="2048" class="slider" aria-label="Max tokens slider">
                     
                     <label for="top-p">Top P: <span id="top-p-value">0.9</span></label>
-                    <input type="range" id="top-p" min="0" max="1" step="0.1" value="0.9" class="slider">
+                    <input type="range" id="top-p" min="0" max="1" step="0.1" value="0.9" class="slider" aria-label="Top P slider">
 
                     <div class="checkbox-group">
                         <label>
-                            <input type="checkbox" id="streaming" checked>
+                            <input type="checkbox" id="streaming" checked aria-label="Enable streaming responses">
                             Enable Streaming
                         </label>
                     </div>
@@ -85,27 +85,27 @@
             <!-- Main Area -->
             <main class="main-area">
                 <!-- Text Generation Mode -->
-                <div id="text-mode" class="mode-content active">
+                <div id="text-mode" class="mode-content active" role="region" aria-label="Text generation mode">
                     <div class="input-section">
                         <h3>💬 Enter Your Prompt</h3>
-                        <textarea id="text-prompt" class="prompt-input" placeholder="Enter your prompt here..."></textarea>
-                        <button id="generate-text" class="btn btn-primary">✨ Generate</button>
-                        <button id="clear-text" class="btn btn-secondary">🗑️ Clear</button>
+                        <textarea id="text-prompt" class="prompt-input" placeholder="Enter your prompt here..." aria-label="Text prompt input"></textarea>
+                        <button id="generate-text" class="btn btn-primary" aria-label="Generate text">✨ Generate</button>
+                        <button id="clear-text" class="btn btn-secondary" aria-label="Clear text">🗑️ Clear</button>
                     </div>
                     <div class="output-section">
                         <h3>📝 Response</h3>
-                        <div id="text-output" class="output-box"></div>
+                        <div id="text-output" class="output-box" role="log" aria-live="polite" aria-label="Generated text output"></div>
                     </div>
                 </div>
 
                 <!-- Chat Mode -->
-                <div id="chat-mode" class="mode-content">
+                <div id="chat-mode" class="mode-content" role="region" aria-label="Chat conversation mode">
                     <div class="chat-container">
-                        <div id="chat-messages" class="chat-messages"></div>
+                        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="Chat messages"></div>
                         <div class="chat-input-container">
-                            <textarea id="chat-input" class="chat-input" placeholder="Type your message..."></textarea>
-                            <button id="send-chat" class="btn btn-primary">Send</button>
-                            <button id="clear-chat" class="btn btn-secondary">Clear</button>
+                            <textarea id="chat-input" class="chat-input" placeholder="Type your message..." aria-label="Chat message input"></textarea>
+                            <button id="send-chat" class="btn btn-primary" aria-label="Send message">Send</button>
+                            <button id="clear-chat" class="btn btn-secondary" aria-label="Clear chat">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -161,13 +161,13 @@
         </div>
 
         <!-- Loading Overlay -->
-        <div id="loading-overlay" class="loading-overlay">
+        <div id="loading-overlay" class="loading-overlay" role="alert" aria-live="assertive" aria-label="Loading">
             <div class="spinner"></div>
             <p>Processing...</p>
         </div>
 
         <!-- Toast Notifications -->
-        <div id="toast-container" class="toast-container"></div>
+        <div id="toast-container" class="toast-container" role="region" aria-live="polite" aria-label="Notifications"></div>
         
         <!-- Footer -->
         <footer class="footer">

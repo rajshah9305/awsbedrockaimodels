@@ -43,17 +43,18 @@
 ### Installation
 
 ```bash
-# 1. Install dependencies
+# 1. Clone the repository
+git clone https://github.com/rajshah9305/awsbedrockaimodels.git
+cd awsbedrockaimodels
+
+# 2. Install dependencies
 npm install
 
-# 2. Configure AWS credentials in .env file
-# Edit .env and add your credentials:
+# 3. Configure AWS credentials
+# Edit .env file and add your credentials:
 #   AWS_ACCESS_KEY_ID=your_key
 #   AWS_SECRET_ACCESS_KEY=your_secret
 #   AWS_REGION=us-east-1
-
-# 3. Verify setup (checks credentials & shows available models)
-npm run test-setup
 
 # 4. Start the server
 npm start
@@ -112,11 +113,10 @@ npm start
 ## 📁 Project Structure
 
 ```
-awsbedrockaimodels-main/
+awsbedrockaimodels/
 ├── 🚀 server.js              # Express server
 ├── 📦 package.json           # Dependencies
-├── 🔐 .env                   # AWS credentials (you configure this)
-├── 🧪 test-setup.js          # Setup verification script
+├── 🔐 .env                   # AWS credentials (configure this)
 ├── services/
 │   └── bedrockService.js     # AWS Bedrock integration
 ├── routes/
@@ -179,15 +179,10 @@ curl -X POST http://localhost:3000/api/bedrock/generate \
 | Issue | Solution |
 |-------|----------|
 | ❌ **INVALID_PAYMENT_INSTRUMENT** | Model requires subscription. Use Nova, Claude, or Titan instead |
-| ❌ **Models not loading** | Run `npm run test-setup` to diagnose. Check credentials in `.env` |
+| ❌ **Models not loading** | Check credentials in `.env` file. Verify AWS IAM permissions |
 | ❌ **AccessDeniedException** | Enable model access in AWS Bedrock Console |
 | ❌ **Credentials error** | Verify `.env` file has correct AWS keys (no spaces/quotes) |
 | ❌ **Port in use** | Change `PORT` in `.env` to different number (e.g., 3001) |
-
-**Quick Diagnostics:**
-```bash
-npm run test-setup  # Checks credentials & shows available models
-```
 
 ---
 
@@ -198,6 +193,18 @@ npm run test-setup  # Checks credentials & shows available models
 - ✅ Rotate credentials regularly
 - ✅ Add authentication for production deployments
 - ✅ Implement rate limiting for public APIs
+
+---
+
+## 🛠️ Development
+
+```bash
+# Run in development mode with auto-reload
+npm run dev
+
+# Production mode
+npm start
+```
 
 ---
 

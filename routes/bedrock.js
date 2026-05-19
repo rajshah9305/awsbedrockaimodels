@@ -35,6 +35,14 @@ router.post('/generate', async (req, res) => {
       });
     }
 
+    // Validate prompt length
+    if (prompt.length > 100000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is too long. Maximum length is 100,000 characters.'
+      });
+    }
+
     const response = await bedrockService.generateText(prompt, modelId, parameters);
     res.json({ success: true, response });
   } catch (error) {
@@ -88,6 +96,24 @@ router.post('/chat', async (req, res) => {
       });
     }
 
+    // Validate messages array
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Messages must be a non-empty array'
+      });
+    }
+
+    // Validate message structure
+    for (const msg of messages) {
+      if (!msg.role || !msg.content) {
+        return res.status(400).json({
+          success: false,
+          error: 'Each message must have role and content'
+        });
+      }
+    }
+
     const response = await bedrockService.chat(messages, modelId, parameters);
     res.json({ success: true, response });
   } catch (error) {
@@ -109,6 +135,22 @@ router.post('/generate-image', async (req, res) => {
         success: false, 
         error: 'Prompt and modelId are required' 
       });
+    }
+
+    // Validate image parameters
+    if (parameters) {
+      if (parameters.width && (parameters.width < 256 || parameters.width > 2048)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Width must be between 256 and 2048'
+        });
+      }
+      if (parameters.height && (parameters.height < 256 || parameters.height > 2048)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Height must be between 256 and 2048'
+        });
+      }
     }
 
     const response = await bedrockService.generateImage(prompt, modelId, parameters);

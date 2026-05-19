@@ -36,11 +36,107 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('offline', () => {
         showToast('No internet connection', 'error');
     });
+    
+    // Handle viewport resize for responsive adjustments
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            adjustLayoutForScreenSize();
+        }, 250);
+    });
+    
+    // Initial layout adjustment
+    adjustLayoutForScreenSize();
 });
 
 function initializeApp() {
     // Set up slider value displays
     updateSliderValues();
+    
+    // Load saved preferences from localStorage
+    loadUserPreferences();
+    
+    // Set up auto-save for preferences
+    setupAutoSave();
+}
+
+function loadUserPreferences() {
+    try {
+        const savedMode = localStorage.getItem('selectedMode');
+        const savedModel = localStorage.getItem('selectedModel');
+        const savedTemp = localStorage.getItem('temperature');
+        const savedTokens = localStorage.getItem('maxTokens');
+        const savedTopP = localStorage.getItem('topP');
+        const savedStreaming = localStorage.getItem('streaming');
+        
+        if (savedMode) {
+            document.getElementById('mode-select').value = savedMode;
+            handleModeChange({ target: { value: savedMode } });
+        }
+        if (savedTemp) document.getElementById('temperature').value = savedTemp;
+        if (savedTokens) document.getElementById('max-tokens').value = savedTokens;
+        if (savedTopP) document.getElementById('top-p').value = savedTopP;
+        if (savedStreaming !== null) {
+            document.getElementById('streaming').checked = savedStreaming === 'true';
+        }
+        
+        updateSliderValues();
+    } catch (error) {
+        console.error('Error loading preferences:', error);
+    }
+}
+
+function setupAutoSave() {
+    // Save mode selection
+    document.getElementById('mode-select').addEventListener('change', (e) => {
+        localStorage.setItem('selectedMode', e.target.value);
+    });
+    
+    // Save model selection
+    document.getElementById('model-select').addEventListener('change', (e) => {
+        localStorage.setItem('selectedModel', e.target.value);
+    });
+    
+    // Save parameter changes
+    document.getElementById('temperature').addEventListener('change', (e) => {
+        localStorage.setItem('temperature', e.target.value);
+    });
+    
+    document.getElementById('max-tokens').addEventListener('change', (e) => {
+        localStorage.setItem('maxTokens', e.target.value);
+    });
+    
+    document.getElementById('top-p').addEventListener('change', (e) => {
+        localStorage.setItem('topP', e.target.value);
+    });
+    
+    document.getElementById('streaming').addEventListener('change', (e) => {
+        localStorage.setItem('streaming', e.target.checked);
+    });
+}
+
+function adjustLayoutForScreenSize() {
+    const width = window.innerWidth;
+    const chatMessages = document.getElementById('chat-messages');
+    const outputBox = document.querySelectorAll('.output-box');
+    
+    // Adjust chat container height for mobile
+    if (width < 768) {
+        if (chatMessages) {
+            chatMessages.style.maxHeight = '400px';
+        }
+        outputBox.forEach(box => {
+            box.style.maxHeight = '300px';
+        });
+    } else {
+        if (chatMessages) {
+            chatMessages.style.maxHeight = '';
+        }
+        outputBox.forEach(box => {
+            box.style.maxHeight = '500px';
+        });
+    }
 }
 
 function setupEventListeners() {
@@ -121,7 +217,7 @@ function handleModeChange(e) {
 async function loadModels() {
     showLoading(true);
     try {
-        const response = await fetch('/api/bedrock/models');
+        const response = await safeFetch('/api/bedrock/models');
         const data = await response.json();
         
         if (data.success) {
@@ -149,6 +245,14 @@ function populateModelSelect(models) {
     const select = document.getElementById('model-select');
     select.innerHTML = '';
     
+    if (!models || models.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No models available';
+        select.appendChild(option);
+        return;
+    }
+    
     // Group models by provider
     const grouped = models.reduce((acc, model) => {
         if (!acc[model.provider]) {
@@ -172,6 +276,15 @@ function populateModelSelect(models) {
         
         select.appendChild(optgroup);
     });
+    
+    // Restore saved model selection if available
+    const savedModel = localStorage.getItem('selectedModel');
+    if (savedModel) {
+        const modelExists = models.some(m => m.modelId === savedModel);
+        if (modelExists) {
+            select.value = savedModel;
+        }
+    }
 }
 
 async function handleTextGeneration() {
@@ -184,25 +297,40 @@ async function handleTextGeneration() {
         return;
     }
     
+    if (!modelId) {
+        showToast('Please select a model', 'error');
+        return;
+    }
+    
     const parameters = getParameters();
     const outputEl = document.getElementById('text-output');
     outputEl.textContent = '';
     
+    // Disable button during generation
+    const generateBtn = document.getElementById('generate-text');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '⏳ Generating...';
+    
     const startTime = Date.now();
     
-    if (streaming) {
-        await handleStreamingGeneration(prompt, modelId, parameters, outputEl);
-    } else {
-        await handleNormalGeneration(prompt, modelId, parameters, outputEl);
+    try {
+        if (streaming) {
+            await handleStreamingGeneration(prompt, modelId, parameters, outputEl);
+        } else {
+            await handleNormalGeneration(prompt, modelId, parameters, outputEl);
+        }
+        
+        updateStats(Date.now() - startTime);
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Generate';
     }
-    
-    updateStats(Date.now() - startTime);
 }
 
 async function handleNormalGeneration(prompt, modelId, parameters, outputEl) {
     showLoading(true);
     try {
-        const response = await fetch('/api/bedrock/generate', {
+        const response = await safeFetch('/api/bedrock/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, modelId, parameters })
@@ -300,12 +428,23 @@ async function handleChatMessage() {
     }
     
     const modelId = document.getElementById('model-select').value;
+    
+    if (!modelId) {
+        showToast('Please select a model', 'error');
+        return;
+    }
+    
     const parameters = getParameters();
     
     // Add user message to history and display
     state.chatHistory.push({ role: 'user', content: message });
     displayChatMessage('user', message);
     input.value = '';
+    
+    // Disable send button during processing
+    const sendBtn = document.getElementById('send-chat');
+    sendBtn.disabled = true;
+    sendBtn.textContent = '⏳ Sending...';
     
     showLoading(true);
     const startTime = Date.now();
@@ -348,6 +487,8 @@ async function handleChatMessage() {
         state.chatHistory.pop();
     } finally {
         showLoading(false);
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
     }
 }
 
@@ -386,12 +527,22 @@ async function handleImageGeneration() {
         return;
     }
     
+    if (!modelId) {
+        showToast('Please select a model', 'error');
+        return;
+    }
+    
     const parameters = {
         width: parseInt(document.getElementById('image-width').value),
         height: parseInt(document.getElementById('image-height').value),
         steps: parseInt(document.getElementById('image-steps').value),
         cfgScale: parseInt(document.getElementById('cfg-scale').value)
     };
+    
+    // Disable button during generation
+    const generateBtn = document.getElementById('generate-image');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '⏳ Generating...';
     
     showLoading(true);
     const startTime = Date.now();
@@ -417,6 +568,8 @@ async function handleImageGeneration() {
         showToast('Failed to generate image: ' + error.message, 'error');
     } finally {
         showLoading(false);
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🎨 Generate Image';
     }
 }
 
@@ -451,6 +604,16 @@ async function handleEmbeddings() {
         return;
     }
     
+    if (!modelId) {
+        showToast('Please select a model', 'error');
+        return;
+    }
+    
+    // Disable button during generation
+    const generateBtn = document.getElementById('generate-embeddings');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '⏳ Generating...';
+    
     showLoading(true);
     const startTime = Date.now();
     
@@ -476,6 +639,8 @@ async function handleEmbeddings() {
         showToast('Failed to generate embeddings: ' + error.message, 'error');
     } finally {
         showLoading(false);
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🔢 Generate Embeddings';
     }
 }
 
@@ -532,4 +697,37 @@ function showToast(message, type = 'info') {
             }
         }, 300);
     }, 3000);
+}
+
+// Utility function to handle fetch errors
+async function safeFetch(url, options = {}) {
+    try {
+        // Check if online
+        if (!navigator.onLine) {
+            throw new Error('No internet connection. Please check your network.');
+        }
+        
+        // Add timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+        
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        return response;
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout. The operation took too long to complete.');
+        }
+        throw error;
+    }
 }

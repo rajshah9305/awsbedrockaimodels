@@ -24,13 +24,13 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 if (!accessKeyId || !secretAccessKey) {
   console.error('❌ ERROR: AWS credentials not configured!');
   console.error('Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your .env file');
-  console.error('See SETUP_GUIDE.md for instructions');
+  console.error('See README.md for setup instructions');
 }
 
 if (accessKeyId === 'your_access_key_here' || secretAccessKey === 'your_secret_access_key_here') {
   console.error('❌ ERROR: Please replace placeholder AWS credentials with your actual credentials');
   console.error('Edit the .env file and add your real AWS Access Key ID and Secret Access Key');
-  console.error('See SETUP_GUIDE.md for instructions');
+  console.error('See README.md for setup instructions');
 }
 
 const bedrockClient = new BedrockClient({
