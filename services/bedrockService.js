@@ -23,14 +23,6 @@ const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 // Validate credentials
 if (!accessKeyId || !secretAccessKey) {
   console.error('❌ ERROR: AWS credentials not configured!');
-  console.error('Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your .env file');
-  console.error('See SETUP_GUIDE.md for instructions');
-}
-
-if (accessKeyId === 'your_access_key_here' || secretAccessKey === 'your_secret_access_key_here') {
-  console.error('❌ ERROR: Please replace placeholder AWS credentials with your actual credentials');
-  console.error('Edit the .env file and add your real AWS Access Key ID and Secret Access Key');
-  console.error('See SETUP_GUIDE.md for instructions');
 }
 
 const bedrockClient = new BedrockClient({
@@ -49,22 +41,171 @@ const bedrockRuntimeClient = new BedrockRuntimeClient({
   }
 });
 
+/**
+ * Model Provider Strategies
+ * Maps specific model families to their request/response formats
+ */
+const PROVIDERS = {
+  NOVA: {
+    id: 'amazon.nova',
+    buildPayload: (prompt, params) => ({
+      messages: [{ role: 'user', content: [{ text: prompt }] }],
+      inferenceConfig: { max_new_tokens: params.maxTokens, temperature: params.temperature, top_p: params.topP }
+    }),
+    buildChatPayload: (messages, params) => ({
+      messages: messages.map(m => ({ role: m.role, content: [{ text: m.content }] })),
+      inferenceConfig: { max_new_tokens: params.maxTokens, temperature: params.temperature, top_p: params.topP }
+    }),
+    parseResponse: (body) => ({
+      text: body.output.message.content[0].text,
+      stopReason: body.stopReason,
+      usage: body.usage
+    }),
+    parseStreamChunk: (chunk) => chunk.contentBlockDelta?.delta?.text ? { text: chunk.contentBlockDelta.delta.text } : null
+  },
+  CLAUDE: {
+    id: 'anthropic.claude',
+    buildPayload: (prompt, params) => ({
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      top_p: params.topP,
+      messages: [{ role: 'user', content: prompt }]
+    }),
+    buildChatPayload: (messages, params) => ({
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      top_p: params.topP,
+      messages
+    }),
+    parseResponse: (body) => ({
+      text: body.content[0].text,
+      stopReason: body.stop_reason,
+      usage: body.usage
+    }),
+    parseStreamChunk: (chunk) => chunk.type === 'content_block_delta' ? { text: chunk.delta.text } : null
+  },
+  TITAN: {
+    id: 'amazon.titan',
+    buildPayload: (prompt, params) => ({
+      inputText: prompt,
+      textGenerationConfig: { maxTokenCount: params.maxTokens, temperature: params.temperature, topP: params.topP, stopSequences: params.stopSequences || [] }
+    }),
+    parseResponse: (body) => ({
+      text: body.results[0].outputText,
+      tokenCount: body.results[0].tokenCount,
+      completionReason: body.results[0].completionReason
+    }),
+    parseStreamChunk: (chunk) => ({ text: chunk.outputText })
+  },
+  LLAMA: {
+    id: 'meta.llama',
+    buildPayload: (prompt, params) => ({
+      prompt,
+      max_gen_len: params.maxTokens,
+      temperature: params.temperature,
+      top_p: params.topP
+    }),
+    parseResponse: (body) => ({
+      text: body.generation,
+      stopReason: body.stop_reason,
+      usage: { prompt_tokens: body.prompt_token_count, completion_tokens: body.generation_token_count }
+    })
+  },
+  COHERE: {
+    id: 'cohere',
+    buildPayload: (prompt, params) => ({
+      prompt,
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      p: params.topP
+    }),
+    parseResponse: (body) => ({
+      text: body.generations[0].text,
+      finishReason: body.generations[0].finish_reason
+    })
+  },
+  JAMBA: {
+    id: 'ai21.jamba',
+    buildPayload: (prompt, params) => ({
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      top_p: params.topP
+    }),
+    parseResponse: (body) => ({
+      text: body.choices[0].message.content,
+      finishReason: body.choices[0].finish_reason,
+      usage: body.usage
+    })
+  },
+  AI21_JURASSIC: {
+    id: 'ai21',
+    buildPayload: (prompt, params) => ({
+      prompt,
+      maxTokens: params.maxTokens,
+      temperature: params.temperature,
+      topP: params.topP
+    }),
+    parseResponse: (body) => ({
+      text: body.completions[0].data.text,
+      finishReason: body.completions[0].finishReason
+    })
+  }
+};
+
 class BedrockService {
-  // List all available foundation models
+  constructor() {
+    this.defaultParams = {
+      temperature: 0.7,
+      maxTokens: 2048,
+      topP: 0.9
+    };
+  }
+
+  /**
+   * Helper to find provider based on modelId
+   */
+  getProvider(modelId) {
+    // Check Jamba first because it contains 'ai21'
+    if (modelId.includes(PROVIDERS.JAMBA.id)) return PROVIDERS.JAMBA;
+
+    for (const key in PROVIDERS) {
+      if (modelId.includes(PROVIDERS[key].id)) {
+        return PROVIDERS[key];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Standard error handler
+   */
+  handleError(error) {
+    console.error('Bedrock Service Error:', error);
+
+    const message = error.message || '';
+    if (message.includes('INVALID_PAYMENT_INSTRUMENT')) {
+      throw new Error('This model requires an AWS Marketplace subscription. Please use Amazon Nova, Claude, or Titan models instead.');
+    } else if (message.includes('AccessDeniedException')) {
+      throw new Error('Model access denied. Please enable model access in AWS Bedrock console.');
+    } else if (message.includes('ValidationException')) {
+      throw new Error('Invalid request parameters. Please check your input and try again.');
+    }
+
+    throw error;
+  }
+
   async listAvailableModels() {
     try {
       const command = new ListFoundationModelsCommand({});
       const response = await bedrockClient.send(command);
       
-      // Filter out models that require marketplace subscription
       const marketplaceModels = ['ai21.jamba', 'ai21.j2'];
       
       return response.modelSummaries
-        .filter(model => {
-          // Exclude marketplace-only models unless explicitly needed
-          const isMarketplaceModel = marketplaceModels.some(prefix => model.modelId.includes(prefix));
-          return !isMarketplaceModel;
-        })
+        .filter(model => !marketplaceModels.some(prefix => model.modelId.includes(prefix)))
         .map(model => ({
           modelId: model.modelId,
           modelName: model.modelName,
@@ -74,18 +215,21 @@ class BedrockService {
           responseStreamingSupported: model.responseStreamingSupported
         }));
     } catch (error) {
-      console.error('Error listing models:', error);
-      throw error;
+      this.handleError(error);
     }
   }
 
-  // Generate text using specified model
   async generateText(prompt, modelId, parameters = {}) {
     try {
-      const payload = this.buildPayload(prompt, modelId, parameters);
+      const params = { ...this.defaultParams, ...parameters };
+      const provider = this.getProvider(modelId);
       
+      const payload = provider
+        ? provider.buildPayload(prompt, params)
+        : { prompt, max_tokens: params.maxTokens, temperature: params.temperature, top_p: params.topP };
+
       const command = new InvokeModelCommand({
-        modelId: modelId,
+        modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(payload)
@@ -94,30 +238,23 @@ class BedrockService {
       const response = await bedrockRuntimeClient.send(command);
       const responseBody = JSON.parse(new TextDecoder().decode(response.body));
       
-      return this.parseResponse(responseBody, modelId);
+      return provider ? provider.parseResponse(responseBody) : responseBody;
     } catch (error) {
-      console.error('Error generating text:', error);
-      
-      // Provide helpful error messages
-      if (error.message && error.message.includes('INVALID_PAYMENT_INSTRUMENT')) {
-        throw new Error('This model requires an AWS Marketplace subscription. Please use Amazon Nova, Claude, or Titan models instead.');
-      } else if (error.message && error.message.includes('AccessDeniedException')) {
-        throw new Error('Model access denied. Please enable model access in AWS Bedrock console.');
-      } else if (error.message && error.message.includes('ValidationException')) {
-        throw new Error('Invalid request parameters. Please check your input and try again.');
-      }
-      
-      throw error;
+      this.handleError(error);
     }
   }
 
-  // Generate text with streaming
   async generateTextStream(prompt, modelId, parameters = {}, onChunk) {
     try {
-      const payload = this.buildPayload(prompt, modelId, parameters);
+      const params = { ...this.defaultParams, ...parameters };
+      const provider = this.getProvider(modelId);
       
+      const payload = provider
+        ? provider.buildPayload(prompt, params)
+        : { prompt, max_tokens: params.maxTokens, temperature: params.temperature, top_p: params.topP };
+
       const command = new InvokeModelWithResponseStreamCommand({
-        modelId: modelId,
+        modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(payload)
@@ -128,33 +265,30 @@ class BedrockService {
       for await (const event of response.body) {
         if (event.chunk) {
           const chunk = JSON.parse(new TextDecoder().decode(event.chunk.bytes));
-          const parsedChunk = this.parseStreamChunk(chunk, modelId);
-          if (parsedChunk) {
-            onChunk(parsedChunk);
-          }
+          const parsedChunk = provider?.parseStreamChunk ? provider.parseStreamChunk(chunk) : chunk;
+          if (parsedChunk) onChunk(parsedChunk);
         }
       }
     } catch (error) {
-      console.error('Error streaming text:', error);
-      
-      // Provide helpful error messages
-      if (error.message && error.message.includes('INVALID_PAYMENT_INSTRUMENT')) {
-        throw new Error('This model requires an AWS Marketplace subscription. Please use Amazon Nova, Claude, or Titan models instead.');
-      } else if (error.message && error.message.includes('AccessDeniedException')) {
-        throw new Error('Model access denied. Please enable model access in AWS Bedrock console.');
-      }
-      
-      throw error;
+      this.handleError(error);
     }
   }
 
-  // Chat with conversation history
   async chat(messages, modelId, parameters = {}) {
     try {
-      const payload = this.buildChatPayload(messages, modelId, parameters);
+      const params = { ...this.defaultParams, ...parameters };
+      const provider = this.getProvider(modelId);
       
+      let payload;
+      if (provider?.buildChatPayload) {
+        payload = provider.buildChatPayload(messages, params);
+      } else {
+        const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+        payload = provider ? provider.buildPayload(prompt, params) : { prompt, max_tokens: params.maxTokens, temperature: params.temperature, top_p: params.topP };
+      }
+
       const command = new InvokeModelCommand({
-        modelId: modelId,
+        modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(payload)
@@ -163,22 +297,12 @@ class BedrockService {
       const response = await bedrockRuntimeClient.send(command);
       const responseBody = JSON.parse(new TextDecoder().decode(response.body));
       
-      return this.parseResponse(responseBody, modelId);
+      return provider ? provider.parseResponse(responseBody) : responseBody;
     } catch (error) {
-      console.error('Error in chat:', error);
-      
-      // Provide helpful error messages
-      if (error.message && error.message.includes('INVALID_PAYMENT_INSTRUMENT')) {
-        throw new Error('This model requires an AWS Marketplace subscription. Please use Amazon Nova, Claude, or Titan models instead.');
-      } else if (error.message && error.message.includes('AccessDeniedException')) {
-        throw new Error('Model access denied. Please enable model access in AWS Bedrock console.');
-      }
-      
-      throw error;
+      this.handleError(error);
     }
   }
 
-  // Generate image
   async generateImage(prompt, modelId, parameters = {}) {
     try {
       const payload = {
@@ -192,7 +316,7 @@ class BedrockService {
       };
 
       const command = new InvokeModelCommand({
-        modelId: modelId,
+        modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(payload)
@@ -209,18 +333,15 @@ class BedrockService {
         }))
       };
     } catch (error) {
-      console.error('Error generating image:', error);
-      throw error;
+      this.handleError(error);
     }
   }
 
-  // Generate embeddings
   async generateEmbeddings(text, modelId) {
     try {
       const payload = { inputText: text };
-
       const command = new InvokeModelCommand({
-        modelId: modelId,
+        modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(payload)
@@ -234,244 +355,8 @@ class BedrockService {
         inputTextTokenCount: responseBody.inputTextTokenCount
       };
     } catch (error) {
-      console.error('Error generating embeddings:', error);
-      throw error;
+      this.handleError(error);
     }
-  }
-
-  // Build payload based on model type
-  buildPayload(prompt, modelId, parameters) {
-    const defaults = {
-      temperature: 0.7,
-      maxTokens: 2048,
-      topP: 0.9
-    };
-
-    const params = { ...defaults, ...parameters };
-
-    // Amazon Nova models
-    if (modelId.includes('amazon.nova')) {
-      return {
-        messages: [{ role: 'user', content: [{ text: prompt }] }],
-        inferenceConfig: {
-          max_new_tokens: params.maxTokens,
-          temperature: params.temperature,
-          top_p: params.topP
-        }
-      };
-    }
-
-    // Claude models
-    if (modelId.includes('anthropic.claude')) {
-      return {
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: params.maxTokens,
-        temperature: params.temperature,
-        top_p: params.topP,
-        messages: [{ role: 'user', content: prompt }]
-      };
-    }
-    
-    // Amazon Titan models
-    if (modelId.includes('amazon.titan')) {
-      return {
-        inputText: prompt,
-        textGenerationConfig: {
-          maxTokenCount: params.maxTokens,
-          temperature: params.temperature,
-          topP: params.topP,
-          stopSequences: params.stopSequences || []
-        }
-      };
-    }
-
-    // AI21 Labs models
-    if (modelId.includes('ai21')) {
-      // Jamba models use a different format
-      if (modelId.includes('jamba')) {
-        return {
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: params.maxTokens,
-          temperature: params.temperature,
-          top_p: params.topP
-        };
-      }
-      // Jurassic models
-      return {
-        prompt: prompt,
-        maxTokens: params.maxTokens,
-        temperature: params.temperature,
-        topP: params.topP
-      };
-    }
-
-    // Cohere models
-    if (modelId.includes('cohere')) {
-      return {
-        prompt: prompt,
-        max_tokens: params.maxTokens,
-        temperature: params.temperature,
-        p: params.topP
-      };
-    }
-
-    // Meta Llama models
-    if (modelId.includes('meta.llama')) {
-      return {
-        prompt: prompt,
-        max_gen_len: params.maxTokens,
-        temperature: params.temperature,
-        top_p: params.topP
-      };
-    }
-
-    // Default payload
-    return {
-      prompt: prompt,
-      max_tokens: params.maxTokens,
-      temperature: params.temperature,
-      top_p: params.topP
-    };
-  }
-
-  // Build chat payload
-  buildChatPayload(messages, modelId, parameters) {
-    const defaults = {
-      temperature: 0.7,
-      maxTokens: 2048,
-      topP: 0.9
-    };
-
-    const params = { ...defaults, ...parameters };
-
-    // Amazon Nova models
-    if (modelId.includes('amazon.nova')) {
-      // Convert messages to Nova format
-      const novaMessages = messages.map(m => ({
-        role: m.role,
-        content: [{ text: m.content }]
-      }));
-      return {
-        messages: novaMessages,
-        inferenceConfig: {
-          max_new_tokens: params.maxTokens,
-          temperature: params.temperature,
-          top_p: params.topP
-        }
-      };
-    }
-
-    // Claude models
-    if (modelId.includes('anthropic.claude')) {
-      return {
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: params.maxTokens,
-        temperature: params.temperature,
-        top_p: params.topP,
-        messages: messages
-      };
-    }
-
-    // For other models, convert to single prompt
-    const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-    return this.buildPayload(prompt, modelId, parameters);
-  }
-
-  // Parse response based on model type
-  parseResponse(responseBody, modelId) {
-    // Amazon Nova models
-    if (modelId.includes('amazon.nova')) {
-      return {
-        text: responseBody.output.message.content[0].text,
-        stopReason: responseBody.stopReason,
-        usage: responseBody.usage
-      };
-    }
-
-    // Claude models
-    if (modelId.includes('anthropic.claude')) {
-      return {
-        text: responseBody.content[0].text,
-        stopReason: responseBody.stop_reason,
-        usage: responseBody.usage
-      };
-    }
-
-    // Amazon Titan models
-    if (modelId.includes('amazon.titan')) {
-      return {
-        text: responseBody.results[0].outputText,
-        tokenCount: responseBody.results[0].tokenCount,
-        completionReason: responseBody.results[0].completionReason
-      };
-    }
-
-    // AI21 Labs models
-    if (modelId.includes('ai21')) {
-      // Jamba models
-      if (modelId.includes('jamba')) {
-        if (responseBody.choices && responseBody.choices[0]) {
-          return {
-            text: responseBody.choices[0].message.content,
-            finishReason: responseBody.choices[0].finish_reason,
-            usage: responseBody.usage
-          };
-        }
-      }
-      // Jurassic models
-      return {
-        text: responseBody.completions[0].data.text,
-        finishReason: responseBody.completions[0].finishReason
-      };
-    }
-
-    // Cohere models
-    if (modelId.includes('cohere')) {
-      return {
-        text: responseBody.generations[0].text,
-        finishReason: responseBody.generations[0].finish_reason
-      };
-    }
-
-    // Meta Llama models
-    if (modelId.includes('meta.llama')) {
-      return {
-        text: responseBody.generation,
-        stopReason: responseBody.stop_reason,
-        promptTokenCount: responseBody.prompt_token_count,
-        generationTokenCount: responseBody.generation_token_count
-      };
-    }
-
-    // Default response
-    return responseBody;
-  }
-
-  // Parse streaming chunk
-  parseStreamChunk(chunk, modelId) {
-    // Amazon Nova models
-    if (modelId.includes('amazon.nova')) {
-      if (chunk.contentBlockDelta && chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.text) {
-        return { text: chunk.contentBlockDelta.delta.text };
-      }
-      return null;
-    }
-
-    // Claude models
-    if (modelId.includes('anthropic.claude')) {
-      if (chunk.type === 'content_block_delta') {
-        return { text: chunk.delta.text };
-      }
-      return null;
-    }
-
-    // Amazon Titan models
-    if (modelId.includes('amazon.titan')) {
-      return { text: chunk.outputText };
-    }
-
-    // Default
-    return chunk;
   }
 }
 
