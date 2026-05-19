@@ -19,29 +19,14 @@ const state = {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+    updateSliderValues();
     setupEventListeners();
     loadModels();
     
-    // Add touch support detection
-    if ('ontouchstart' in window) {
-        document.body.classList.add('touch-device');
-    }
-    
-    // Add connection status monitoring
-    window.addEventListener('online', () => {
-        showToast('Connection restored', 'success');
-    });
-    
-    window.addEventListener('offline', () => {
-        showToast('No internet connection', 'error');
-    });
+    // Connection status monitoring
+    window.addEventListener('online', () => showToast('Connection restored', 'success'));
+    window.addEventListener('offline', () => showToast('No internet connection', 'error'));
 });
-
-function initializeApp() {
-    // Set up slider value displays
-    updateSliderValues();
-}
 
 function setupEventListeners() {
     // Mode selection
