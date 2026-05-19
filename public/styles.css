@@ -5,23 +5,26 @@
 }
 
 :root {
-    --primary-color: #FF9900;
-    --secondary-color: #232F3E;
-    --accent-color: #146EB4;
-    --success-color: #00A86B;
-    --error-color: #D13212;
-    --bg-color: #f5f5f5;
-    --card-bg: #ffffff;
-    --text-primary: #232F3E;
-    --text-secondary: #666;
-    --border-color: #ddd;
-    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --secondary-color: #1e293b;
+    --accent-color: #8b5cf6;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --bg-color: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc;
     line-height: 1.6;
     min-height: 100vh;
     position: relative;
@@ -52,12 +55,13 @@ body::before {
 header {
     text-align: center;
     padding: 50px 20px 40px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     border-radius: 15px;
     margin-bottom: 30px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--glass-border);
 }
 
 header::before {
@@ -145,14 +149,16 @@ header h1 {
 
 /* Sidebar */
 .sidebar {
-    background: var(--card-bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 15px;
     padding: 25px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     height: fit-content;
     position: sticky;
     top: 20px;
-    border: 1px solid rgba(102, 126, 234, 0.1);
+    border: 1px solid var(--glass-border);
     transition: all 0.3s ease;
 }
 
@@ -183,11 +189,12 @@ header h1 {
 .select-input {
     width: 100%;
     padding: 12px;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 1rem;
     margin-bottom: 10px;
-    background: white;
+    background: #1e293b;
+    color: white;
     cursor: pointer;
     transition: all 0.3s;
 }
@@ -244,15 +251,15 @@ label {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #FF9900 0%, #ff7700 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(255, 153, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #ff7700 0%, #ff6600 100%);
+    background: linear-gradient(135deg, var(--primary-hover) 0%, #1d4ed8 100%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 153, 0, 0.4);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .btn-secondary {
@@ -306,11 +313,13 @@ label {
 
 /* Main Area */
 .main-area {
-    background: var(--card-bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 15px;
     padding: 30px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    border: 1px solid rgba(102, 126, 234, 0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
     min-height: 600px;
     transition: all 0.3s ease;
 }
@@ -341,10 +350,12 @@ label {
     width: 100%;
     min-height: 150px;
     padding: 15px;
-    border: 2px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     font-size: 1rem;
     font-family: inherit;
+    color: white;
     resize: vertical;
     transition: all 0.3s;
 }
@@ -360,8 +371,8 @@ label {
 }
 
 .output-box {
-    background: linear-gradient(135deg, #f9f9f9 0%, #ffffff 100%);
-    border: 2px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 20px;
     min-height: 200px;
@@ -369,10 +380,11 @@ label {
     overflow-y: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
-    font-family: 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
     line-height: 1.8;
     font-size: 0.95rem;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    color: #e2e8f0;
 }
 
 .output-box:empty::before {
@@ -395,10 +407,11 @@ label {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 20px;
-    background: #f9f9f9;
+    background: rgba(15, 23, 42, 0.3);
     border-radius: 10px;
     margin-bottom: 20px;
     min-height: 300px;
+    border: 1px solid var(--border-color);
 }
 
 .chat-message {
@@ -430,9 +443,10 @@ label {
 }
 
 .chat-message.assistant {
-    background: white;
-    border: 2px solid var(--border-color);
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid var(--border-color);
     border-bottom-left-radius: 4px;
+    color: #f8fafc;
 }
 
 .chat-message .role {
@@ -458,10 +472,12 @@ label {
     flex: 1;
     min-width: 200px;
     padding: 12px;
-    border: 2px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     font-size: 1rem;
     font-family: inherit;
+    color: white;
     resize: none;
     min-height: 60px;
     transition: all 0.3s;
@@ -603,16 +619,18 @@ label {
 }
 
 .toast {
-    background: white;
+    background: #1e293b;
+    color: white;
     padding: 15px 20px;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     margin-bottom: 10px;
     min-width: 300px;
     max-width: 100%;
     animation: slideInRight 0.3s ease;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    border: 1px solid var(--border-color);
 }
 
 @keyframes slideInRight {
@@ -703,12 +721,13 @@ label {
 
 /* Footer */
 .footer {
-    background: linear-gradient(135deg, #232F3E 0%, #1a252f 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     color: white;
     border-radius: 15px;
     margin-top: 40px;
     padding: 40px 30px 20px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
 }
 
 .footer-content {

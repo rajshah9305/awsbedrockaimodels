@@ -256,7 +256,8 @@ class BedrockService {
         inferenceConfig: {
           max_new_tokens: params.maxTokens,
           temperature: params.temperature,
-          top_p: params.topP
+          top_p: params.topP,
+          top_k: params.topK || 50
         }
       };
     }
@@ -268,6 +269,7 @@ class BedrockService {
         max_tokens: params.maxTokens,
         temperature: params.temperature,
         top_p: params.topP,
+        top_k: params.topK || 250,
         messages: [{ role: 'user', content: prompt }]
       };
     }
@@ -356,7 +358,8 @@ class BedrockService {
         inferenceConfig: {
           max_new_tokens: params.maxTokens,
           temperature: params.temperature,
-          top_p: params.topP
+          top_p: params.topP,
+          top_k: params.topK || 50
         }
       };
     }
@@ -368,6 +371,7 @@ class BedrockService {
         max_tokens: params.maxTokens,
         temperature: params.temperature,
         top_p: params.topP,
+        top_k: params.topK || 250,
         messages: messages
       };
     }
