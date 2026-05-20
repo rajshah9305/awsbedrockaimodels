@@ -340,7 +340,7 @@ async function handleNormalGeneration(prompt, modelId, parameters, outputEl) {
         
         if (data.success) {
             outputEl.textContent = data.response.text;
-            outputEl.style.color = '#232F3E';
+            outputEl.style.color = '#e2e8f0';
             showToast('Text generated successfully', 'success');
         } else {
             throw new Error(data.error);
@@ -350,7 +350,6 @@ async function handleNormalGeneration(prompt, modelId, parameters, outputEl) {
         const errorMsg = error.message || 'Unknown error';
         
         // Provide helpful error messages
-        let displayMsg = errorMsg;
         let suggestion = '';
         
         if (errorMsg.includes('INVALID_PAYMENT_INSTRUMENT') || errorMsg.includes('Marketplace subscription')) {
@@ -359,11 +358,13 @@ async function handleNormalGeneration(prompt, modelId, parameters, outputEl) {
             suggestion = '\n\n💡 Solution: Enable model access in AWS Bedrock Console:\n1. Go to AWS Bedrock Console\n2. Click "Model access"\n3. Request access to the model\n4. Wait for approval (usually instant)';
         } else if (errorMsg.includes('credentials')) {
             suggestion = '\n\n💡 Solution: Check your AWS credentials in the .env file';
+        } else if (errorMsg.includes('throttling') || errorMsg.includes('ThrottlingException')) {
+            suggestion = '\n\n💡 Tip: Too many requests. Please wait a moment and try again.';
         }
         
         showToast('Failed to generate text: ' + errorMsg, 'error');
-        outputEl.textContent = '❌ Error: ' + displayMsg + suggestion;
-        outputEl.style.color = '#D13212';
+        outputEl.textContent = '❌ Error: ' + errorMsg + suggestion;
+        outputEl.style.color = '#ef4444';
     } finally {
         showLoading(false);
     }
@@ -378,21 +379,33 @@ async function handleStreamingGeneration(prompt, modelId, parameters, outputEl) 
             body: JSON.stringify({ prompt, modelId, parameters })
         });
         
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
         showLoading(false);
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
         
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+
+            // Keep the last partial line in the buffer
+            buffer = lines.pop();
             
             for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue;
+
+                if (trimmedLine.startsWith('data: ')) {
+                    const data = trimmedLine.slice(6);
                     if (data === '[DONE]') {
                         showToast('Streaming completed', 'success');
                         return;
@@ -404,16 +417,23 @@ async function handleStreamingGeneration(prompt, modelId, parameters, outputEl) 
                             outputEl.textContent += parsed.text;
                             outputEl.scrollTop = outputEl.scrollHeight;
                         }
+                        if (parsed.error) {
+                            throw new Error(parsed.error);
+                        }
                     } catch (e) {
-                        // Ignore parse errors
+                        // If parsing fails, it might be a partial JSON in one line (unlikely with \n delimiter)
+                        // but we handle it just in case.
+                        console.warn('Failed to parse streaming line:', trimmedLine);
                     }
                 }
             }
         }
     } catch (error) {
         console.error('Error streaming text:', error);
-        showToast('Failed to stream text: ' + error.message, 'error');
-        outputEl.textContent = 'Error: ' + error.message;
+        const errorMsg = error.message || 'Unknown error';
+        showToast('Failed to stream text: ' + errorMsg, 'error');
+        outputEl.textContent = '❌ Error: ' + errorMsg;
+        outputEl.style.color = '#ef4444';
         showLoading(false);
     }
 }

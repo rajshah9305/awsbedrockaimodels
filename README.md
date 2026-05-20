@@ -33,6 +33,23 @@
 
 ---
 
+## 🌐 Live Deployment
+
+This project is optimized for **Vercel**. You can deploy it instantly by pushing to GitHub and connecting your repository to Vercel.
+
+### Deployment Steps:
+1. Push this codebase to your GitHub repository.
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard).
+3. Click **Add New** → **Project**.
+4. Import your repository.
+5. Configure the following **Environment Variables**:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_REGION` (e.g., `us-east-1`)
+6. Click **Deploy**.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites

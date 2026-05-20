@@ -84,44 +84,48 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log('='.repeat(70));
-  console.log('🚀 AWS Bedrock AI Web App');
-  console.log('👨‍💻 Developed by: RAJ SHAH');
-  console.log('🔗 GitHub: https://github.com/rajshah9305/awsbedrockaimodels');
-  console.log('='.repeat(70));
-  console.log(`📍 Server running on: http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🌍 Region: ${process.env.AWS_REGION || 'us-east-1'}`);
-  console.log('='.repeat(70));
-  console.log('🤖 Ready to interact with AWS Bedrock models!');
-  console.log('');
-  console.log('💡 Quick Tips:');
-  console.log('   • Use Amazon Nova, Claude, or Titan models (no subscription needed)');
-  console.log('   • Enable model access in AWS Bedrock Console first');
-  console.log('   • Check README.md for detailed instructions');
-  console.log('='.repeat(70));
-});
-
-// Set server timeout
-server.timeout = SERVER_TIMEOUT;
-server.keepAliveTimeout = SERVER_TIMEOUT;
-server.headersTimeout = SERVER_TIMEOUT + 1000;
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
+// For local development
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const server = app.listen(PORT, () => {
+    console.log('='.repeat(70));
+    console.log('🚀 AWS Bedrock AI Web App');
+    console.log('👨‍💻 Developed by: RAJ SHAH');
+    console.log('🔗 GitHub: https://github.com/rajshah9305/awsbedrockaimodels');
+    console.log('='.repeat(70));
+    console.log(`📍 Server running on: http://localhost:${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🌍 Region: ${process.env.AWS_REGION || 'us-east-1'}`);
+    console.log('='.repeat(70));
+    console.log('🤖 Ready to interact with AWS Bedrock models!');
+    console.log('');
+    console.log('💡 Quick Tips:');
+    console.log('   • Use Amazon Nova, Claude, or Titan models (no subscription needed)');
+    console.log('   • Enable model access in AWS Bedrock Console first');
+    console.log('   • Check README.md for detailed instructions');
+    console.log('='.repeat(70));
   });
-});
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
+  // Set server timeout
+  server.timeout = SERVER_TIMEOUT;
+  server.keepAliveTimeout = SERVER_TIMEOUT;
+  server.headersTimeout = SERVER_TIMEOUT + 1000;
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(0);
+    });
   });
-});
+
+  process.on('SIGINT', () => {
+    console.log('\nSIGINT signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(0);
+    });
+  });
+}
+
+module.exports = app;
